@@ -2,8 +2,20 @@ AUGMENTATION: True
 IMAGE_SIZE: [224, 224, 3] # as per VGG 16 model
 BATCH_SIZE: 16
 INCLUDE_TOP: False
-EPOCHS: 1
+EPOCHS: 2
 CLASSES: 2
 WEIGHTS: imagenet
 LEARNING_RATE: 0.01
 
+
+
+# import dagshub
+# dagshub.init(repo_owner='pantpujan017', repo_name='Chest-Cancer-Classification-using-MLFlow-and-DVC', mlflow=True)
+
+# import mlflow
+# with mlflow.start_run():
+#   mlflow.log_param('parameter name', 'value')
+#   mlflow.log_metric('metric name', 1)
+
+
+#   export MLFLOW_TRACKING_URI= https://dagshub.com/pantpujan017/Chest-Cancer-Classification-using-MLFlow-and-DVC.mlflow
