@@ -1,16 +1,13 @@
 name: Azure CI/CD Pipeline
-
 on:
   push:
     branches:
       - main
     paths-ignore:
       - 'README.md'
-
 permissions:
   id-token: write
   contents: read
-
 jobs:
   integration:
     name: Continuous Integration
@@ -18,13 +15,13 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0
       - name: Lint code
         run: echo "Linting repository"
-
       - name: Run unit tests
         run: echo "Running unit tests"
-
+  
   build-and-push-acr-image:
     name: Continuous Delivery
     needs: integration
@@ -33,14 +30,25 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0
+      
+      - name: List files for debugging
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in current directory:"
+          ls -la
+          echo "Checking for Dockerfile:"
+          test -f Dockerfile && echo "Dockerfile found!" || echo "Dockerfile NOT found!"
+      
       - name: Login to Azure Container Registry
         uses: docker/login-action@v2
         with:
           registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
           username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
-
+      
       - name: Build, tag, and push image to Azure ACR
         env:
           ACR_REGISTRY: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
@@ -54,7 +62,7 @@ jobs:
           docker push $ACR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG
           
           echo "Image pushed: $ACR_REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
-
+  
   continuous-deployment:
     name: Continuous Deployment
     needs: build-and-push-acr-image
@@ -63,26 +71,28 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0
+      
       - name: Login to Azure Container Registry
         run: |
           echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin
-
+      
       - name: Stop and remove old container
         run: |
           docker stop chest-cancer-app || true
           docker rm chest-cancer-app || true
-
+      
       - name: Pull latest image from ACR
         run: |
           docker pull ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/chest-cancer:latest
-
+      
       - name: Run new Docker container
         run: |
           docker run -d -p 8080:8080 --name chest-cancer-app \
             --restart unless-stopped \
             ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/chest-cancer:latest
-
+      
       - name: Clean up old images
         run: |
           docker system prune -f
